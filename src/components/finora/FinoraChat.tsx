@@ -126,7 +126,11 @@ export function FinoraChat({
                     return (
                       <Tool key={`${message.id}-${index}`} defaultOpen={false}>
                         <ToolHeader
-                          type={toolPart.type.replace("tool-", "").replace(/_/g, " ")}
+                          type={
+                            toolPart.type
+                              .replace("tool-", "")
+                              .replace(/_/g, " ") as `tool-${string}`
+                          }
                           state={toolPart.state}
                         />
                         <ToolContent>
