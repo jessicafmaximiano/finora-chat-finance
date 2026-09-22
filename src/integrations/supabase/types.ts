@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      goals: {
+        Row: {
+          created_at: string
+          current_amount_cents: number
+          deadline: string | null
+          id: string
+          name: string
+          target_amount_cents: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_amount_cents?: number
+          deadline?: string | null
+          id?: string
+          name: string
+          target_amount_cents: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_amount_cents?: number
+          deadline?: string | null
+          id?: string
+          name?: string
+          target_amount_cents?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
@@ -41,50 +74,59 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
-          display_name: string | null
+          full_name: string | null
           id: string
+          monthly_income_cents: number | null
+          updated_at: string
         }
         Insert: {
           created_at?: string
-          display_name?: string | null
+          full_name?: string | null
           id: string
+          monthly_income_cents?: number | null
+          updated_at?: string
         }
         Update: {
           created_at?: string
-          display_name?: string | null
+          full_name?: string | null
           id?: string
+          monthly_income_cents?: number | null
+          updated_at?: string
         }
         Relationships: []
       }
       transactions: {
         Row: {
-          amount: number
+          amount_cents: number
           category: string
           created_at: string
-          description: string | null
+          description: string
           id: string
-          kind: string
-          occurred_on: string
+          occurred_at: string
+          type: string
+          updated_at: string
           user_id: string
         }
         Insert: {
-          amount: number
+          amount_cents: number
           category?: string
           created_at?: string
-          description?: string | null
+          description: string
           id?: string
-          kind?: string
-          occurred_on?: string
+          occurred_at?: string
+          type?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
-          amount?: number
+          amount_cents?: number
           category?: string
           created_at?: string
-          description?: string | null
+          description?: string
           id?: string
-          kind?: string
-          occurred_on?: string
+          occurred_at?: string
+          type?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
