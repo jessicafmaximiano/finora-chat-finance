@@ -140,5 +140,11 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   }
+}
+
+@utility font-display {
+  font-family: "Fraunces", ui-serif, Georgia, serif;
+  letter-spacing: -0.01em;
 }
