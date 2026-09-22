@@ -115,26 +115,30 @@ export const Route = createFileRoute("/api/chat")({
                 "Registra um gasto ou uma entrada de dinheiro da pessoa, já classificado em uma categoria.",
               inputSchema: z.object({
                 amount: z.number().describe("Valor em reais, sempre positivo"),
-                kind: z.enum(["expense", "income"]).describe("expense = gasto, income = entrada"),
+                type: z.enum(["expense", "income"]).describe("expense = gasto, income = entrada"),
                 category: z.string().describe("Categoria da transação"),
-                description: z.string().nullable().describe("Descrição curta, ou null"),
+                description: z.string().describe("Descrição curta do que foi gasto ou recebido"),
                 occurred_on: z
                   .string()
                   .nullable()
                   .describe("Data no formato YYYY-MM-DD, ou null para hoje"),
               }),
-              execute: async ({ amount, kind, category, description, occurred_on }) => {
+              execute: async ({ amount, type, category, description, occurred_on }) => {
+                const cents = Math.round(Math.abs(amount) * 100);
+                if (cents <= 0) return { ok: false, erro: "Valor precisa ser maior que zero" };
                 const { data, error } = await supabase
                   .from("transactions")
                   .insert({
                     user_id: userId,
-                    amount,
-                    kind,
+                    amount_cents: cents,
+                    type,
                     category,
                     description,
-                    occurred_on: occurred_on ?? today,
+                    occurred_at: occurred_on
+                      ? new Date(`${occurred_on}T12:00:00Z`).toISOString()
+                      : new Date().toISOString(),
                   })
-                  .select("id, amount, kind, category, description, occurred_on")
+                  .select("id, amount_cents, type, category, description, occurred_at")
                   .single();
                 if (error) return { ok: false, erro: error.message };
                 return { ok: true, transacao: data };
@@ -171,10 +175,10 @@ export const Route = createFileRoute("/api/chat")({
               execute: async ({ from, to }) => {
                 const { data, error } = await supabase
                   .from("transactions")
-                  .select("amount, kind, category, description, occurred_on")
-                  .gte("occurred_on", from)
-                  .lte("occurred_on", to)
-                  .order("occurred_on", { ascending: false });
+                  .select("amount_cents, type, category, description, occurred_at")
+                  .gte("occurred_at", `${from}T00:00:00Z`)
+                  .lte("occurred_at", `${to}T23:59:59Z`)
+                  .order("occurred_at", { ascending: false });
                 if (error) return { ok: false, erro: error.message };
 
                 const rows = data ?? [];
@@ -182,8 +186,8 @@ export const Route = createFileRoute("/api/chat")({
                 let gastos = 0;
                 const porCategoria: Record<string, number> = {};
                 for (const row of rows) {
-                  const valor = Number(row.amount);
-                  if (row.kind === "income") entradas += valor;
+                  const valor = row.amount_cents / 100;
+                  if (row.type === "income") entradas += valor;
                   else {
                     gastos += valor;
                     porCategoria[row.category] = (porCategoria[row.category] ?? 0) + valor;
@@ -198,6 +202,42 @@ export const Route = createFileRoute("/api/chat")({
                   por_categoria: porCategoria,
                   quantidade: rows.length,
                 };
+              },
+            }),
+            criar_meta: tool({
+              description: "Cria uma meta financeira para a pessoa.",
+              inputSchema: z.object({
+                name: z.string().describe("Nome da meta"),
+                target_amount: z.number().describe("Valor desejado em reais"),
+                deadline: z.string().nullable().describe("Prazo YYYY-MM-DD, ou null"),
+              }),
+              execute: async ({ name, target_amount, deadline }) => {
+                const cents = Math.round(Math.abs(target_amount) * 100);
+                if (cents <= 0) return { ok: false, erro: "Valor precisa ser maior que zero" };
+                const { data, error } = await supabase
+                  .from("goals")
+                  .insert({
+                    user_id: userId,
+                    name,
+                    target_amount_cents: cents,
+                    deadline: deadline,
+                  })
+                  .select("id, name, target_amount_cents, current_amount_cents, deadline")
+                  .single();
+                if (error) return { ok: false, erro: error.message };
+                return { ok: true, meta: data };
+              },
+            }),
+            consultar_metas: tool({
+              description: "Lista as metas financeiras da pessoa e o progresso de cada uma.",
+              inputSchema: z.object({}),
+              execute: async () => {
+                const { data, error } = await supabase
+                  .from("goals")
+                  .select("id, name, target_amount_cents, current_amount_cents, deadline")
+                  .order("created_at", { ascending: false });
+                if (error) return { ok: false, erro: error.message };
+                return { ok: true, metas: data ?? [] };
               },
             }),
           },
